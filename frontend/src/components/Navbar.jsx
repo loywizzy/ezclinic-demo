@@ -1,23 +1,32 @@
 import { useState, useRef, useEffect } from "react";
 import { FiUser, FiChevronDown, FiLogOut } from "react-icons/fi";
-import { useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+
+// Mapping pathnames to titles
+const titles = {
+  "/dashboard": "แดชบอร์ด",
+};
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const navRef = useRef(null);
-  const navigate = useNavigate();
-  // ดึงชื่อผู้ใช้จาก localStorage (หรือ fallback)
-  const name = localStorage.getItem("username") || "Please login";
+  const location = useLocation();
 
-  // คลิกข้างนอก dropdown ปิดอัตโนมัติ
+  // Determine title based on current path
+  const title = titles[location.pathname] || "";
+
+  // User info
+  const name = localStorage.getItem("username") || "";
+
+  // Close dropdown when clicking outside
   useEffect(() => {
-    function onClick(e) {
+    const handleClick = (e) => {
       if (navRef.current && !navRef.current.contains(e.target)) {
         setOpen(false);
       }
-    }
-    document.addEventListener("click", onClick);
-    return () => document.removeEventListener("click", onClick);
+    };
+    document.addEventListener("click", handleClick);
+    return () => document.removeEventListener("click", handleClick);
   }, []);
 
   const logout = () => {
@@ -27,10 +36,14 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-white shadow-sm px-6 py-4 flex justify-end items-center">
+    <nav className="bg-white shadow-sm px-6 py-4 flex justify-between items-center">
+      {/* Dynamic page title */}
+      <h2 className="text-2xl font-semibold">{title}</h2>
+
+      {/* User dropdown */}
       <div className="relative" ref={navRef}>
         <button
-          onClick={() => setOpen((o) => !o)}
+          onClick={() => setOpen(o => !o)}
           className="inline-flex items-center space-x-2 hover:bg-gray-100 px-3 py-1 rounded"
         >
           <FiUser className="text-gray-600" />

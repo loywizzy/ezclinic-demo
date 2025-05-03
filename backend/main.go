@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -14,54 +15,64 @@ import (
 )
 
 func main() {
-	// ------------------------------------------------------------------
-	// 1) โหลดตัวแปร ENV จาก .env (ถ้ามี) – เวลา deploy Railway จะไม่ใช้ไฟล์นี้
-	// ------------------------------------------------------------------
+
 	if err := godotenv.Load(".env"); err != nil {
 		log.Println("no .env file found (ใช้ ENV จากระบบแทน)")
 	}
 
-	// ------------------------------------------------------------------
-	// 2) ต่อฐานข้อมูล PostgreSQL
-	// ------------------------------------------------------------------
+	// ต่อ DB
 	if err := database.Connect(); err != nil {
 		log.Fatalf("ไม่สามารถเชื่อมต่อฐานข้อมูล: %v", err)
 	}
 	log.Println("เชื่อมต่อฐานข้อมูลสำเร็จ")
 
-	// ------------------------------------------------------------------
-	// 3) สร้าง Gin Engine + Middleware
-	// ------------------------------------------------------------------
+	// สร้าง router
 	r := gin.Default()
-	r.Use(cors.Default()) // อนุญาตทุก Origin (ปรับตามต้องการ)
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:5173"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
 
-	// ------------------------------------------------------------------
-	// 4) เส้นทางสาธารณะ
-	// ------------------------------------------------------------------
 	api := r.Group("/api")
 	api.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
 	})
-
-	// auth/login
 	api.POST("/auth/login", handlers.Login(database.DB))
 
-	// ------------------------------------------------------------------
-	// 5) เส้นทางที่ต้องมี JWT
-	// ------------------------------------------------------------------
+	// protected routes
 	protected := api.Group("/")
 	protected.Use(middleware.JWT())
 	{
-		protected.GET("/dashboard", handlers.Dashboard(database.DB))
+		// เรียกแค่ DashboardCount (ไม่มี Dashboard)
+		protected.GET("/dashboard", handlers.DashboardCount(database.DB))
+
+		// ตัวอย่าง CRUD พนักงาน
 		protected.GET("/employees", handlers.ListEmployees(database.DB))
 		protected.POST("/employees", handlers.CreateEmployee(database.DB))
+		protected.PUT("/employees/:id", handlers.UpdateEmployee(database.DB))
+		protected.DELETE("/employees/:id", handlers.DeleteEmployee(database.DB))
 
-		// เพิ่ม route CRUD อื่น ๆ ที่นี่
+		protected.GET("/customers", handlers.ListCustomers(database.DB))
+		protected.POST("/customers", handlers.CreateCustomer(database.DB))
+		protected.PUT("/customers/:id", handlers.UpdateCustomer(database.DB))
+		protected.DELETE("/customers/:id", handlers.DeleteCustomer(database.DB))
+
+		protected.GET("/positions", handlers.ListPositions(database.DB))
+		protected.POST("/positions", handlers.CreatePosition(database.DB))
+		protected.PUT("/positions/:id", handlers.UpdatePosition(database.DB))
+		protected.DELETE("/positions/:id", handlers.DeletePosition(database.DB))
+
+		protected.GET("/permissions", handlers.ListPermissions(database.DB))
+		protected.POST("/permissions", handlers.CreatePermissionGroup(database.DB))
+		protected.PUT("/permissions/:id", handlers.UpdatePermissionGroup(database.DB))
+		protected.DELETE("/permissions/:id", handlers.DeletePermissionGroup(database.DB))
 	}
 
-	// ------------------------------------------------------------------
-	// 6) รันเซิร์ฟเวอร์
-	// ------------------------------------------------------------------
+	// รันเซิร์ฟเวอร์
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"

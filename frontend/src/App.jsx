@@ -4,6 +4,11 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Layout from "./components/Layout.jsx";
+import CustomerPage from "./pages/CustomerPage";
+import PositionPage from "./pages/PositionPage.jsx";
+import PermissionPage from "./pages/PermissionPage.jsx";
+import EmployeePage from "./pages/EmployeePage.jsx";
+
 
 // เพจ placeholder สำหรับ Customers, Employees, Positions
 function Placeholder({ title }) {
@@ -14,6 +19,7 @@ function Placeholder({ title }) {
     </div>
   );
 }
+
 
 export default function App() {
   const token = localStorage.getItem("token");
@@ -53,10 +59,10 @@ export default function App() {
           element={
             token ? (
               <Layout>
-                <Placeholder title="ลูกค้า" />
+                <CustomerPage />
               </Layout>
             ) : (
-              <Navigate to="/login" />
+              <Navigate to="/login" replace />
             )
           }
         />
@@ -67,7 +73,7 @@ export default function App() {
           element={
             token ? (
               <Layout>
-                <Placeholder title="พนักงาน" />
+                <EmployeePage/>
               </Layout>
             ) : (
               <Navigate to="/login" />
@@ -81,7 +87,20 @@ export default function App() {
           element={
             token ? (
               <Layout>
-                <Placeholder title="ตำแหน่ง" />
+                <PositionPage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
+        />
+
+<Route
+          path="/permissions"
+          element={
+            token ? (
+              <Layout>
+                <PermissionPage />
               </Layout>
             ) : (
               <Navigate to="/login" />
